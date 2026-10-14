@@ -12,6 +12,7 @@ import { recordUsage } from "@/lib/usage";
 import { ruleChecks } from "./checks";
 import { checkPrompt, learnerOf, outlinePrompt, sectionPrompt, storyPrompt } from "./prompt";
 import {
+  STAGE_NAMES,
   checkOut,
   outlineOut,
   sectionDataSchema,
@@ -25,7 +26,8 @@ import {
   type StoryLine,
 } from "./schema";
 
-type Conn = { provider: string; model: string; keyId?: string | null };
+/** `deadline`: every AI call ends by this time (ms since epoch). */
+type Conn = { provider: string; model: string; keyId?: string | null; deadline?: number };
 type TopicRow = {
   id: string;
   user_id: string;
@@ -54,6 +56,11 @@ type SectionRow = {
 
 const db = () => adminClient();
 
+// Vercel stops a job at maxDuration (300 s) without running any catch block, so nothing gets saved.
+// AI calls stop by this budget instead; a slow provider then becomes a saved, readable error.
+const BUDGET_MS = 270_000;
+const MIN_CALL_MS = 15_000;
+
 function answersOf(t: TopicRow) {
   return Array.isArray(t.answers) ? (t.answers as { question: string; answer: string }[]) : null;
 }
@@ -64,8 +71,10 @@ function costOf(conn: Conn, u: Usage): number | null {
 }
 
 async function call<T>(userId: string, conn: Conn, stage: Parameters<typeof generateStructured>[0]["stage"], schema: Parameters<typeof generateStructured<T>>[0]["schema"], prompt: string) {
+  const left = (conn.deadline ?? Infinity) - Date.now();
+  if (left < MIN_CALL_MS) throw new AppError("timeout", undefined, 504);
   const key = conn.provider === "mock" ? ("mock" as const) : await getKey(userId, conn.provider, conn.keyId);
-  const { output, usage } = await generateStructured<T>({ key, model: conn.model, schema, prompt, stage });
+  const { output, usage } = await generateStructured<T>({ key, model: conn.model, schema, prompt, stage, timeoutMs: Math.min(150_000, left) });
   await recordUsage({
     userId,
     kind: "llm",
@@ -257,34 +266,50 @@ async function checkStage(t: TopicRow, conn: Conn) {
       sections.map((s, i) => db().from("topic_sections").update({ data: datas[i] }).eq("id", s.id).eq("user_id", t.user_id)),
     );
   } catch (err) {
-    // The review is a safety net: if it fails, the topic is still usable with the rule-based flags.
+    // The review is a safety net: if it fails or time runs out, the topic is still usable with the rule-based flags.
     logError("check", err);
   }
   await updateTopic(t.id, t.user_id, { story_fr: story, stage: "done", status: "ready", error: null });
 }
 
 /** Runs (or continues) the generation job for a topic. Never throws: failures are saved on the topic. */
-export async function runGeneration(topicId: string, userId: string, conn: Conn) {
+export async function runGeneration(topicId: string, userId: string, baseConn: Conn) {
+  const conn = { ...baseConn, deadline: Date.now() + BUDGET_MS };
+  let stage = "outline";
   try {
     let t = await loadTopic(topicId, userId);
     await updateTopic(topicId, userId, { status: "generating", error: null, gen_started_at: new Date().toISOString(), model_used: `${conn.provider}/${conn.model}` });
+    stage = t.stage;
     if (t.stage === "outline") await outlineStage(t, conn);
     t = await loadTopic(topicId, userId);
+    stage = t.stage;
     if (t.stage === "sections") await sectionsStage(t, conn);
     t = await loadTopic(topicId, userId);
+    stage = t.stage;
     if (t.stage === "story") await storyStage(t, conn);
     t = await loadTopic(topicId, userId);
+    stage = t.stage;
     if (t.stage === "check") await checkStage(t, conn);
     t = await loadTopic(topicId, userId);
     if (t.stage === "done") await updateTopic(topicId, userId, { status: "ready" });
   } catch (err) {
-    logError("generation", err);
-    await updateTopic(topicId, userId, { status: "failed", error: toAppError(err).message }).catch(() => {});
+    logError(`generation:${stage}`, err);
+    await updateTopic(topicId, userId, { status: "failed", error: failureMessage(stage, err) }).catch(() => {});
   }
 }
 
+/** Says which step stopped and why, so the learner knows what to try. */
+function failureMessage(stage: string, err: unknown): string {
+  const e = toAppError(err);
+  const where = STAGE_NAMES[stage] ?? "writing this topic";
+  if (e.code === "timeout")
+    return `The AI answered too slowly while ${where}. Try again — it continues from this step. If it keeps happening, pick a faster model in Settings.`;
+  return `Stopped while ${where}. ${e.message}`;
+}
+
 /** Rewrites one section now (used by "Regenerate" and "Add words about…"). */
-export async function regenerateSection(topicId: string, sectionId: string, userId: string, conn: Conn, extraRequest?: string | null) {
+export async function regenerateSection(topicId: string, sectionId: string, userId: string, baseConn: Conn, extraRequest?: string | null) {
+  const conn = { ...baseConn, deadline: Date.now() + BUDGET_MS };
   const t = await loadTopic(topicId, userId);
   const all = await loadSections(topicId, userId);
   const s = all.find((x) => x.id === sectionId);

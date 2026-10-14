@@ -55,9 +55,9 @@ export const PROVIDERS: Provider[] = [
     note: "Has a free tier with no card needed. On the free tier, Google may use your prompts to improve its products.",
     liveModels: true,
     textModels: [
-      { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash", price: { in: 0.3, out: 2.5 }, tag: "recommended" },
-      { id: "gemini-3.5-flash", label: "Gemini 3.5 Flash", tag: "best" },
-      { id: "gemini-2.5-flash-lite", label: "Gemini 2.5 Flash-Lite", price: { in: 0.1, out: 0.4 }, tag: "cheap" },
+      // 2.5 models are closed to new Google accounts (404). 3.8 Flash doubles in price on 2027-01-01.
+      { id: "gemini-3.8-flash", label: "Gemini 3.8 Flash", price: { in: 0.75, out: 3.75 }, tag: "recommended" },
+      { id: "gemini-3.5-flash-lite", label: "Gemini 3.5 Flash-Lite", price: { in: 0.3, out: 2.5 }, tag: "cheap" },
     ],
   },
   {

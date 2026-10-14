@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { FullSection, FullTopic } from "@/lib/data";
-import type { SectionData, StoryLine } from "@/lib/content/schema";
+import { STAGE_NAMES, type SectionData, type StoryLine } from "@/lib/content/schema";
 import { playAll, setMode as storeMode, setRepeat, setSpeed, stop, usePlayer, type Mode, type Speed } from "../player";
 import { api, Fr, Rich, Spinner, toast } from "../ui";
 import { AudioBar } from "./AudioBar";
@@ -191,7 +191,12 @@ export function TopicView({ initial, initialStale, welcome, hasLlm }: { initial:
       )}
       {(topic.status === "failed" || stale) && (
         <div className="error-box stack">
-          <p>{stale ? "This topic stopped before it was finished." : topic.error || "Something went wrong while writing this topic."}</p>
+          <p>
+            {stale
+              ? `This topic stopped while ${STAGE_NAMES[topic.stage] ?? "it was being written"}. Usually the AI was too slow and the server's 5-minute limit ran out. “Finish it” continues from this step.`
+              : topic.error || "Something went wrong while writing this topic."}
+          </p>
+          {topic.modelUsed && <p className="hint" style={{ margin: 0 }}>Model: {topic.modelUsed}</p>}
           <div className="row">
             <button className="btn btn-primary btn-small" onClick={resume} disabled={!hasLlm}>
               {stale ? "Finish it" : "Try again"}

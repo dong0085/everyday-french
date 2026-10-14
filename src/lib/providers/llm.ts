@@ -72,7 +72,7 @@ function providerOptions(provider: string): ProviderOptions {
 
 /**
  * Generates an object that matches `schema`. If the model's answer does not validate,
- * asks once more with the validation error included.
+ * asks once more with the validation error included. `timeoutMs` covers both tries.
  */
 export async function generateStructured<T>(opts: {
   key: ProviderKey | "mock";
@@ -88,6 +88,7 @@ export async function generateStructured<T>(opts: {
   }
 
   const model = await languageModel(opts.key, opts.model);
+  const abortSignal = AbortSignal.timeout(opts.timeoutMs ?? 150_000);
   const run = async (prompt: string) => {
     const result = await generateText({
       model,
@@ -95,7 +96,7 @@ export async function generateStructured<T>(opts: {
       prompt: prompt + "\n\nAnswer with JSON that matches the requested structure.",
       output: Output.object({ schema: opts.schema }),
       maxRetries: 1,
-      abortSignal: AbortSignal.timeout(opts.timeoutMs ?? 150_000),
+      abortSignal,
       providerOptions: providerOptions(opts.key === "mock" ? "" : (opts.key as ProviderKey).provider),
     });
     return {

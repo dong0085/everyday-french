@@ -68,6 +68,14 @@ export type SectionData = z.infer<typeof sectionDataSchema>;
 export const storyLineSchema = sentenceSchema;
 export type StoryLine = Sentence;
 
+/** A topic's generation stage, as the end of "Stopped while …". */
+export const STAGE_NAMES: Record<string, string> = {
+  outline: "planning the sections",
+  sections: "writing the words and sentences",
+  story: "retelling your story in French",
+  check: "checking the French",
+};
+
 // ---------- AI output (no ids, nullable rather than optional: strict JSON modes need every key) ----------
 
 export const outlineOut = z.object({
