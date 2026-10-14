@@ -44,6 +44,7 @@ Tests: `pnpm typecheck && pnpm lint && pnpm test && pnpm test:db && pnpm test:e2
 | `KEY_ENCRYPTION_SECRET_V1` | `openssl rand -base64 32` (mark Sensitive; losing it makes saved keys unreadable) |
 | `CRON_SECRET` | `openssl rand -hex 24` |
 | `NEXT_PUBLIC_DATA_REGION` | e.g. `the United States (us-east-1)` |
+| `ADMIN_EMAILS` | Google email(s) that may open `/admin`, comma-separated |
 | `NEXT_PUBLIC_CONTACT_EMAIL` | Optional contact shown on the privacy page |
 
 Never set `ALLOW_MOCK_PROVIDERS` in production.
@@ -56,6 +57,18 @@ Never set `ALLOW_MOCK_PROVIDERS` in production.
 4. Supabase → Authentication → URL Configuration: Site URL = production URL; Redirect URLs = `https://<production-domain>/**` and `http://localhost:3000/**`.
 
 Google's sign-in screen shows `<ref>.supabase.co` unless a custom domain is added to Supabase (paid).
+
+### Admin panel
+
+Sign in with an email listed in `ADMIN_EMAILS` and an **Admin** link appears in the header. `/admin` shows:
+
+- Setup checks: Google sign-in enabled, email sign-up off, keep-awake job, cron secret, mock providers off, contact email.
+- Users, topics, failure rate, lines flagged by the review pass, audio clips, saved notes, estimated AI spend (paid by users).
+- Free plan room: database size (500 MB) and file storage (1 GB).
+- Last 30 days charts, the app-wide daily safety limits, topic models with their failure rates, provider usage, recent failures.
+- The user list: search, sort, block / unblock sign-in, delete an account (type the email to confirm).
+
+It shows account details and counts only, never anyone's topics, stories, notes or recordings.
 
 ### Keeping the free database awake
 

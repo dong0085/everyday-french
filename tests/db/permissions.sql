@@ -9,3 +9,11 @@ reset role;
 set role anon;
 select 'FAIL: anon can read topics' from public.topics limit 1;
 reset role;
+-- Admin summaries are for the server only.
+set role authenticated;
+select 'FAIL: authenticated can call admin_overview' from public.admin_overview() limit 1;
+select 'FAIL: authenticated can call admin_users' from public.admin_users() limit 1;
+reset role;
+set role anon;
+select 'FAIL: anon can call admin_users' from public.admin_users() limit 1;
+reset role;

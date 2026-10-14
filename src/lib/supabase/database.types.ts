@@ -147,7 +147,14 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            [_ in never]: never
+            "admin_overview":
+{ Args: Record<PropertyKey, never>; Returns: Json
+                           },
+"admin_users":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "banned_until": string,"calls30": number,"captures": number,"clip_bytes": number,"clips": number,"cost30": number,"created_at": string,"email": string,"failed": number,"id": string,"key_providers": (string)[],"last_active": string,"last_sign_in_at": string,"level": string,"llm_model": string,"name": string,"provider": string,"topics": number,"tts_provider": string
+            }[]
+                           }
           }
           Enums: {
             [_ in never]: never

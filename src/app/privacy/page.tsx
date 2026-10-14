@@ -23,6 +23,13 @@ export default function Privacy() {
         Data is stored with Supabase (database and files) in {region}, and the app runs on Vercel. Each account can only see its own data.
       </p>
 
+      <h2>What the person who runs the app sees</h2>
+      <p>
+        An admin page shows account details and counts, to keep the service running: your email and name, when you joined and last signed in, how many topics, recordings and
+        notes you have, which providers you connected (never the keys), the usage log, and the error message when a topic fails. It does not show your topics, stories, notes
+        or recordings.
+      </p>
+
       <h2>Your API keys</h2>
       <ul>
         <li>Keys are encrypted (AES-256-GCM) before they are saved. The encryption secret is kept separately from the database, so the database alone cannot reveal them.</li>

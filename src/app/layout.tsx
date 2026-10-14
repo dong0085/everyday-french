@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { getUserId } from "@/lib/supabase/server";
+import { getAdmin } from "@/lib/admin";
 import { Header } from "@/components/Header";
 import { Toaster } from "@/components/ui";
 import "./globals.css";
@@ -22,11 +23,11 @@ export const viewport: Viewport = {
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const userId = await getUserId().catch(() => null);
+  const [userId, admin] = await Promise.all([getUserId().catch(() => null), getAdmin().catch(() => null)]);
   return (
     <html lang="en">
       <body>
-        <Header signedIn={Boolean(userId)} />
+        <Header signedIn={Boolean(userId)} admin={Boolean(admin)} />
         {children}
         <Toaster />
       </body>

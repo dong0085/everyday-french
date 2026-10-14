@@ -10,7 +10,7 @@
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "db:types": "supabase gen types typescript --local > src/lib/supabase/database.types.ts",
+    "db:types": "SUPABASE_DB_PASSWORD=postgres supabase gen types typescript --local > src/lib/supabase/database.types.ts",
     "test:db": "docker exec -i supabase_db_everyday-french psql -U postgres -d postgres -q < tests/db/permissions.sql 2>&1 | (! grep FAIL)"
   },
   "dependencies": {

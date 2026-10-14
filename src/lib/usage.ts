@@ -8,7 +8,7 @@ export type Kind = "llm" | "tts" | "stt" | "key_test";
 // Per user, per 10 minutes. Counts events (one LLM call, one clip, one transcription, one key test).
 const PER_USER_10_MIN: Record<Kind, number> = { llm: 40, tts: 400, stt: 20, key_test: 30 };
 // Whole app, per day: protects the free hosting tiers if someone scripts the API.
-const GLOBAL_PER_DAY: Record<Kind, number> = { llm: 5000, tts: 50000, stt: 1000, key_test: 2000 };
+export const GLOBAL_PER_DAY: Record<Kind, number> = { llm: 5000, tts: 50000, stt: 1000, key_test: 2000 };
 
 export async function checkLimit(userId: string, kind: Kind, cost = 1) {
   const db = adminClient();

@@ -26,7 +26,7 @@ The owner is an A1–A2 learner of France French, native Chinese, reads English.
 
 ```
 src/proxy.ts                  Session refresh (getClaims) + CSP nonce + security headers on every request
-src/app/                      Pages: / (landing or home), /new, /topics/[id], /review, /settings, /privacy
+src/app/                      Pages: / (landing or home), /new, /topics/[id], /review, /settings, /privacy, /admin
 src/app/api/**/route.ts       JSON API. Every handler is wrapped in api() from src/lib/http.ts
 src/app/auth/*                Google sign-in, callback (seeds the example topic), sign-out, dev sign-in (tests only)
 src/lib/http.ts               api(): auth, same-origin check, content type, safe errors
@@ -38,6 +38,8 @@ src/lib/content/              schema.ts (stored + AI shapes) · prompt.ts (all p
                               checks.ts (rule checks) · example.ts (example topic) · french.ts (typography, search folding)
 src/lib/audio/                cache-key.ts · clips.ts (lookup + stable signed URLs) · upload.ts
 src/lib/usage.ts              Rate limits, daily caps, monthly usage
+src/lib/admin.ts              Admin check (ADMIN_EMAILS), admin numbers (admin_overview / admin_users SQL functions), setup checks
+src/lib/account.ts            Account deletion (storage first, then the auth user)
 src/components/               Client UI. player.ts = the single audio player + stored preferences
 supabase/migrations/          Schema, RLS, buckets, pg_cron. Apply locally with `supabase db reset`
 tests/unit · tests/e2e · tests/db
@@ -57,6 +59,7 @@ tests/unit · tests/e2e · tests/db
 - AI output is rendered as React text only (`<Rich>` handles `*italic*`). Never use `dangerouslySetInnerHTML`.
 - The mock provider and `/auth/dev` work only when `ALLOW_MOCK_PROVIDERS=1` and `VERCEL_ENV` is not `production`.
 - `api_keys`, `usage_events`, `heartbeat` have no grants for browser roles. New user tables need RLS policies in a new migration.
+- The admin panel (`/admin`, `/api/admin/*`) is for emails in `ADMIN_EMAILS`; everyone else gets a 404. Admin pages and routes call `getAdmin()` / `requireAdmin()` first. The panel shows account metadata and counts only; topic content, stories, notes and recordings stay private (the privacy page promises this). The `admin_*` SQL functions are executable by `service_role` only.
 
 ## Content rules
 
