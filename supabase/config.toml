@@ -416,7 +416,7 @@ enabled = true
 
 # ---------- production (supabase config push) ----------
 [remotes.production]
-project_id = "dikxkafzmgqshhndzelt"
+project_id = "lgueyppwpgtxnaatugnc"
 
 [remotes.production.auth]
 site_url = "https://everyday-french.vercel.app"
