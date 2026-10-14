@@ -34,7 +34,7 @@ A free, public web app. A learner signs in with Google, tells the app what just 
 - **Review**: 20 random lines from the whole library, one card at a time, no score.
 - Search across all topics, accent-insensitive (Postgres `unaccent` + `pg_trgm`).
 - Device-voice playback is labelled "device voice" so the learner knows which one to imitate.
-- Silent Web Audio stream keeps the output open between clips (USB speaker crackle fix).
+- An inaudible Web Audio noise floor (about -76 dB), started on the first tap, keeps the output and the speaker amplifier awake between clips (USB speaker crackle fix; pure digital silence was not enough).
 
 ### Providers (AI)
 - Text: Anthropic, OpenAI, Google, Mistral, DeepSeek, Groq, xAI (dedicated `@ai-sdk/*` packages), OpenRouter and Custom (`@ai-sdk/openai-compatible`). Structured output via `generateText({ output: Output.object() })`; on `NoObjectGeneratedError`, one re-ask with the validation error. `maxRetries: 1`, explicit timeouts, no global temperature, low reasoning effort.

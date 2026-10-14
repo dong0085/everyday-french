@@ -76,6 +76,12 @@ export function hasClip(text: string) {
 }
 
 // ---------- keep the audio output open (stops clicks on some USB speakers) ----------
+// Some powered speakers mute their amplifier on pure digital silence and pop when sound starts
+// or stops (with the device voice too, which plays outside the page). An inaudible noise floor
+// (about -76 dB) keeps the output and the amplifier awake, so speech starts and ends cleanly.
+// It starts on the first tap anywhere, so it is already running when the first line plays.
+
+const NOISE_LEVEL = 0.00016;
 
 let keepAlive: AudioContext | null = null;
 let idleTimer: ReturnType<typeof setTimeout> | undefined;
@@ -85,10 +91,14 @@ function holdAudioOpen() {
   try {
     if (!keepAlive) {
       keepAlive = new Ctx();
-      const silence = keepAlive.createConstantSource();
-      silence.offset.value = 0;
-      silence.connect(keepAlive.destination);
-      silence.start();
+      const buffer = keepAlive.createBuffer(1, keepAlive.sampleRate * 2, keepAlive.sampleRate);
+      const samples = buffer.getChannelData(0);
+      for (let i = 0; i < samples.length; i++) samples[i] = (Math.random() * 2 - 1) * NOISE_LEVEL;
+      const floor = keepAlive.createBufferSource();
+      floor.buffer = buffer;
+      floor.loop = true;
+      floor.connect(keepAlive.destination);
+      floor.start();
       document.addEventListener("visibilitychange", () => {
         if (document.hidden) void keepAlive?.suspend();
       });
@@ -97,6 +107,10 @@ function holdAudioOpen() {
     clearTimeout(idleTimer);
     idleTimer = setTimeout(() => void keepAlive?.suspend(), 5 * 60_000);
   } catch {}
+}
+if (typeof document !== "undefined") {
+  document.addEventListener("pointerdown", holdAudioOpen, { passive: true });
+  document.addEventListener("keydown", holdAudioOpen);
 }
 
 // ---------- device voice ----------
