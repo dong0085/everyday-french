@@ -1,9 +1,6 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
-  /* config options here */
-  cacheComponents: true,
-  partialPrefetching: true,
-};
+// Nearly every page is per-user, so pages render on each request (no Cache Components).
+const nextConfig: NextConfig = {};
 
 export default nextConfig;
