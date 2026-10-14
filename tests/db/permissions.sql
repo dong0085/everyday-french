@@ -17,3 +17,8 @@ reset role;
 set role anon;
 select 'FAIL: anon can call admin_users' from public.admin_users() limit 1;
 reset role;
+-- v2 tables: signed-out visitors see nothing; signed-in users only their own rows (RLS).
+set role anon;
+select 'FAIL: anon can read review_items' from public.review_items limit 1;
+select 'FAIL: anon can read attempts' from public.attempts limit 1;
+reset role;

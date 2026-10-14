@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getAdmin, GLOBAL_PER_DAY, loadOverview, loadUsers, setupChecks, type Overview } from "@/lib/admin";
 import { AdminUsers } from "@/components/AdminUsers";
+import { Icon } from "@/components/Icon";
 import { bytes, money, when } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Admin", robots: { index: false } };
@@ -26,7 +27,7 @@ export default async function AdminPage() {
 
   return (
     <main className="page admin">
-      <header className="spread" style={{ margin: "16px 0 20px" }}>
+      <header className="spread admin-head">
         <div>
           <h1>Admin</h1>
           <p className="sub">The whole app at a glance. Topic content stays private: only counts and account details appear here.</p>
@@ -37,11 +38,14 @@ export default async function AdminPage() {
       </header>
 
       <section aria-labelledby="setup">
-        <h3 id="setup">Setup</h3>
+        <h2 id="setup" className="eyebrow">Setup</h2>
         <ul className="checks">
           {checks.map((c) => (
             <li key={c.label} className={c.ok ? "ok" : c.optional ? "optional" : "bad"}>
-              <span aria-hidden="true">{c.ok ? "✓" : c.optional ? "○" : "✕"}</span>
+              <span className="check-icon">
+                <Icon name={c.ok ? "check" : c.optional ? "info" : "close"} size={18} />
+                <span className="visually-hidden">{c.ok ? "OK:" : c.optional ? "Note:" : "Needs attention:"}</span>
+              </span>
               <div>
                 <strong>{c.label}</strong>
                 <span className="meta"> · {c.detail}</span>
@@ -52,7 +56,7 @@ export default async function AdminPage() {
       </section>
 
       <section aria-labelledby="numbers">
-        <h3 id="numbers">Numbers</h3>
+        <h2 id="numbers" className="eyebrow">Numbers</h2>
         <div className="stats">
           <Stat label="Users" value={u.total} lines={[`+${u.new7} this week · +${u.new30} in 30 days`, `${u.active7} active this week`, u.banned ? `${u.banned} blocked` : null]} />
           <Stat
@@ -73,7 +77,7 @@ export default async function AdminPage() {
       </section>
 
       <section aria-labelledby="free">
-        <h3 id="free">Free plan room</h3>
+        <h2 id="free" className="eyebrow">Free plan room</h2>
         <div className="stack">
           <Meter label="Database" used={overview.dbBytes} max={FREE_DB_BYTES} />
           <Meter label="File storage (audio + memos)" used={storageBytes} max={FREE_STORAGE_BYTES} />
@@ -84,7 +88,7 @@ export default async function AdminPage() {
       </section>
 
       <section aria-labelledby="days">
-        <h3 id="days">Last 30 days</h3>
+        <h2 id="days" className="eyebrow">Last 30 days</h2>
         <div className="charts">
           <Bars title="New topics" data={overview.daily.map((d) => ({ day: d.day, value: d.topics, part: d.failed }))} partLabel="failed" />
           <Bars title="New users" data={overview.daily.map((d) => ({ day: d.day, value: d.users }))} />
@@ -93,7 +97,7 @@ export default async function AdminPage() {
       </section>
 
       <section aria-labelledby="caps">
-        <h3 id="caps">Daily safety limits (last 24 hours, whole app)</h3>
+        <h2 id="caps" className="eyebrow">Daily safety limits (last 24 hours, whole app)</h2>
         <div className="stack">
           {(Object.keys(GLOBAL_PER_DAY) as (keyof typeof GLOBAL_PER_DAY)[]).map((k) => (
             <Meter key={k} label={KIND_LABEL[k] ?? k} used={overview.today[k] ?? 0} max={GLOBAL_PER_DAY[k]} count />
@@ -102,17 +106,17 @@ export default async function AdminPage() {
       </section>
 
       <section aria-labelledby="models">
-        <h3 id="models">Topic models, 30 days</h3>
+        <h2 id="models" className="eyebrow">Topic models, 30 days</h2>
         <ModelsTable rows={overview.models30} />
       </section>
 
       <section aria-labelledby="usage">
-        <h3 id="usage">Provider usage, 30 days</h3>
+        <h2 id="usage" className="eyebrow">Provider usage, 30 days</h2>
         <UsageTable rows={overview.usage30} />
       </section>
 
       <section aria-labelledby="failures">
-        <h3 id="failures">Recent failures</h3>
+        <h2 id="failures" className="eyebrow">Recent failures</h2>
         {overview.failures.length === 0 ? (
           <p className="empty">No failed topics or sections.</p>
         ) : (
@@ -144,7 +148,7 @@ export default async function AdminPage() {
       </section>
 
       <section aria-labelledby="users">
-        <h3 id="users">Users ({users.length})</h3>
+        <h2 id="users" className="eyebrow">Users ({users.length})</h2>
         <AdminUsers users={users} selfEmail={admin.email} />
       </section>
     </main>
@@ -190,22 +194,36 @@ function Meter({ label, used, max, count }: { label: string; used: number; max: 
 function Bars({ title, data, partLabel }: { title: string; data: { day: string; value: number; part?: number }[]; partLabel?: string }) {
   const max = Math.max(1, ...data.map((d) => d.value));
   const total = data.reduce((s, d) => s + d.value, 0);
+  const peak = data.reduce<{ day: string; value: number } | null>((best, d) => (d.value > (best?.value ?? 0) ? d : best), null);
+  const avg = data.length ? total / data.length : 0;
+  const parts = data.reduce((s, d) => s + (d.part ?? 0), 0);
+  const summary = peak
+    ? `Peak ${peak.value} on ${peak.day.slice(5)} · average ${avg < 10 ? avg.toFixed(1) : Math.round(avg)} a day${partLabel && parts ? ` · ${parts} ${partLabel}` : ""}`
+    : "Nothing in the last 30 days";
   return (
     <figure className="card bars">
-      <figcaption className="spread small">
-        <strong>{title}</strong>
-        <span className="muted">{total} total</span>
+      <figcaption className="stack-sm">
+        <span className="spread small">
+          <strong>{title}</strong>
+          <span className="muted">{total} total</span>
+        </span>
+        <span className="meta">{summary}</span>
       </figcaption>
-      <div className="bar-row" aria-hidden="true">
-        {data.map((d) => (
-          <div key={d.day} className="bar" title={`${d.day}: ${d.value}${d.part ? ` (${d.part} ${partLabel})` : ""}`}>
-            <div className="bar-fill" style={{ height: `${(d.value / max) * 100}%` }}>
-              {d.part ? <div className="bar-part" style={{ height: `${(d.part / d.value) * 100}%` }} /> : null}
+      <div className="bar-chart">
+        <span className="bar-max meta" aria-hidden="true">
+          {max}
+        </span>
+        <div className="bar-row" role="img" aria-label={`${title}, last 30 days: ${total} total. ${summary}.`}>
+          {data.map((d) => (
+            <div key={d.day} className="bar" title={`${d.day}: ${d.value}${d.part ? ` (${d.part} ${partLabel})` : ""}`}>
+              <div className="bar-fill" style={{ height: `${(d.value / max) * 100}%` }}>
+                {d.part ? <div className="bar-part" style={{ height: `${(d.part / d.value) * 100}%` }} /> : null}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
-      <div className="spread meta">
+      <div className="spread meta" aria-hidden="true">
         <span>{data[0]?.day.slice(5)}</span>
         <span>{data.at(-1)?.day.slice(5)}</span>
       </div>

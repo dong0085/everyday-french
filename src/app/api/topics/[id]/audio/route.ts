@@ -10,7 +10,7 @@ export const GET = api<{ id: string }>("none", async ({ userId, params }) => {
   const topic = await getTopic(params.id);
   if (!topic) throw new AppError("bad_request", "Topic not found.", 404);
   const { tts } = await connections(userId);
-  const lines = frenchLines(topic.sections, topic.storyFr);
+  const lines = frenchLines(topic.sections, topic.storyFr, topic.dialogue, topic.nextTime);
   const clips = await clipsFor(userId, lines, tts);
   const missing = lines
     .map((text, i) => ({ text, prev: lines[i - 1] ?? null, next: lines[i + 1] ?? null }))

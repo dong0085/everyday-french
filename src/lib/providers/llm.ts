@@ -17,7 +17,7 @@ import { AppError } from "./errors";
 import { checkBaseUrl, pinnedFetch } from "./safe-fetch";
 import { mockOutput, mockAllowed } from "./mock";
 
-export type Stage = "questions" | "outline" | "section" | "story" | "check";
+export type Stage = "questions" | "outline" | "section" | "story" | "dialogue" | "check" | "feedback";
 export type Usage = { in: number; out: number };
 
 export async function languageModel(key: ProviderKey, modelId: string): Promise<LanguageModel> {

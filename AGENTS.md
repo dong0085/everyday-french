@@ -10,7 +10,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # Everyday French — guide for coding agents
 
-A public, free web app. People sign in with Google, bring their own AI keys, and turn things that happened to them into French study topics with audio. `docs/PLAN.md` records what v1 is and why (five expert reviews shaped it); read it before changing behaviour.
+A public, free web app. People sign in with Google, bring their own AI keys, and turn things that happened to them into French study topics with audio, then keep them with a light spaced review. `docs/PLAN.md` records what the app is and why (v1 from five expert reviews, v2 from four design/UX and learning reviews); read it before changing behaviour.
 
 The owner is an A1–A2 learner of France French, native Chinese, reads English. Talk to them in simple language.
 
@@ -19,14 +19,14 @@ The owner is an A1–A2 learner of France French, native Chinese, reads English.
 - Next.js 16.4 App Router, TypeScript, React 19 (React Compiler lint rules are on: no synchronous `setState` in effects, no `Date.now()` in render).
 - Supabase: Google auth, Postgres with RLS, Storage. `@supabase/ssr` with the new `sb_publishable_` / `sb_secret_` keys.
 - Vercel AI SDK v7 (`generateText` + `Output.object`, `instructions` instead of `system`). TTS and STT use provider REST APIs directly.
-- zod v4 for every input and every AI output. Plain global CSS (`src/app/globals.css`), no UI library.
+- zod v4 for every input and every AI output. Plain CSS, no UI library: `src/app/globals.css` holds the design tokens (light/dark, spacing, type, radius, motion) and shared components; page styles live in `src/app/styles/*.css`. Literata (serif) is self-hosted with `next/font`.
 - Hosting: Vercel Hobby + Supabase Free.
 
 ## Map
 
 ```
 src/proxy.ts                  Session refresh (getClaims) + CSP nonce + security headers on every request
-src/app/                      Pages: / (landing or home), /new, /topics/[id], /review, /settings, /privacy, /admin
+src/app/                      Pages: / (landing or home), /new, /topics/[id], /review, /words, /settings, /sounds, /privacy, /admin, /offline
 src/app/api/**/route.ts       JSON API. Every handler is wrapped in api() from src/lib/http.ts
 src/app/auth/*                Google sign-in, callback (seeds the example topic), sign-out, dev sign-in (tests only)
 src/lib/http.ts               api(): auth, same-origin check, content type, safe errors
@@ -35,19 +35,32 @@ src/lib/keys/                 crypto.ts (AES-256-GCM, HKDF per row, AAD) · stor
 src/lib/providers/            catalog.ts (providers, curated models, prices, guides) · llm.ts · speech.ts (TTS/STT)
                               models.ts (key tests, model lists) · safe-fetch.ts (SSRF guard) · errors.ts · mock.ts
 src/lib/content/              schema.ts (stored + AI shapes) · prompt.ts (all prompts) · pipeline.ts (generation job)
-                              checks.ts (rule checks) · example.ts (example topic) · french.ts (typography, search folding)
+                              checks.ts (rule checks: level, who, IPA, story coverage) · feedback.ts ("Your turn")
+                              example.ts (example topic) · french.ts (typography, search folding)
+src/lib/review.ts             Spaced review: which lines are in the deck (syncReviewItems), scheduling, decks
+src/lib/data.ts               Page reads as the user; throws DbUnavailableError so pages show <Unavailable />
+src/lib/draft.ts              The /new draft in localStorage (saveDraft is also used by "I used it →")
 src/lib/audio/                cache-key.ts · clips.ts (lookup + stable signed URLs) · upload.ts
 src/lib/usage.ts              Rate limits, daily caps, monthly usage
 src/lib/admin.ts              Admin check (ADMIN_EMAILS), admin numbers (admin_overview / admin_users SQL functions), setup checks
 src/lib/account.ts            Account deletion (storage first, then the auth user)
-src/components/               Client UI. player.ts = the single audio player + stored preferences
+src/components/               Client UI. ui.tsx = api(), Sheet, confirmDialog, Switch, toast, PlayButton · Icon.tsx = SVG icons
+                              player.ts = the single audio player (repeat with speak gaps, record & compare, device voice)
+  topic/                      The study page: TopicView, StudyBar, WordItem, LineItem, DialogueView, YourTurn, GuidedStudy…
+  review/ · settings/ · home/ Review cards, Settings groups, home pieces
 supabase/migrations/          Schema, RLS, buckets, pg_cron. Apply locally with `supabase db reset`
 tests/unit · tests/e2e · tests/db
 ```
 
 ## How generation works
 
-`POST /api/topics` inserts a topic (status `generating`, stage `outline`) and starts `runGeneration` in `after()`. The job runs outline → sections (3 in parallel, each knows the core words other sections own) → My story → review, saving after every stage. The topic page polls `GET /api/topics/[id]`. A failed or stale job continues from its stage via `POST /api/topics/[id]/generate`. Sections live in `topic_sections` rows so parallel writes never collide.
+`POST /api/topics` inserts a topic (status `generating`, stage `outline`) and starts `runGeneration` in `after()`. The job runs outline (sections, core words, "next time" lines; knows the words the learner already has from other topics) → sections (3 in parallel, each knows the core words other sections own; words carry IPA, pronunciation hints, phrase patterns; sentences say who speaks) → My story → dialogue → check, saving after every stage. When the topic becomes ready, `syncReviewItems` puts its lines in the review deck. The topic page polls `GET /api/topics/[id]`. A failed or stale job continues from its stage via `POST /api/topics/[id]/generate`. Sections live in `topic_sections` rows so parallel writes never collide.
+
+## How studying works
+
+- Topic page: study bar (modes, speed, Repeat, Play), guided study (Listen → Words → Say it → Retell → Your turn), dialogue role-play, "Next time, say…". Hidden quiz text is not in the DOM until shown.
+- "Your turn": `POST /api/topics/[id]/attempt` gives gentle feedback on one sentence and can save it as the learner's own line (`mine: true`).
+- Review: `review_items` rows (boxes 0–5 → 1/3/7/14/30 days). Grading goes through `POST /api/review`; nothing is scored or shown as a number of "correct" answers. Any edit that adds, changes or removes lines must call `syncReviewItems(topicId, userId)`.
 
 ## Rules that keep it safe
 
@@ -56,14 +69,15 @@ tests/unit · tests/e2e · tests/db
 - Only `src/lib/keys/store.ts` decrypts keys. Keys never go to the browser, logs, or error messages. Log only through `logError()`.
 - Provider errors become `AppError` codes (`toAppError`). Never return a provider's response body.
 - The custom provider's base URL goes through `checkBaseUrl` + `pinnedFetch`. Built-in providers use fixed hosts.
-- AI output is rendered as React text only (`<Rich>` handles `*italic*`). Never use `dangerouslySetInnerHTML`.
+- AI output is rendered as React text only (`<Rich>` handles `*italic*`). Never use `dangerouslySetInnerHTML` (the one exception is the fixed theme script in `layout.tsx`, which contains no user or AI text).
 - The mock provider and `/auth/dev` work only when `ALLOW_MOCK_PROVIDERS=1` and `VERCEL_ENV` is not `production`.
-- `api_keys`, `usage_events`, `heartbeat` have no grants for browser roles. New user tables need RLS policies in a new migration.
+- `api_keys`, `usage_events`, `heartbeat` have no grants for browser roles. New user tables need RLS policies in a new migration (`review_items` and `attempts` are "own rows" tables, checked in `tests/db`).
+- Destructive actions ask with `confirmDialog()` (ui.tsx), never `window.confirm` / `prompt`.
 - The admin panel (`/admin`, `/api/admin/*`) is for emails in `ADMIN_EMAILS`; everyone else gets a 404. Admin pages and routes call `getAdmin()` / `requireAdmin()` first. The panel shows account metadata and counts only; topic content, stories, notes and recordings stay private (the privacy page promises this). The `admin_*` SQL functions are executable by `service_role` only.
 
 ## Content rules
 
-The rules for the French (level targets, gender, elision, register, chunks, examples) live in `INSTRUCTIONS` in `src/lib/content/prompt.ts`. Keep that string byte-stable (prompt caching); put per-call details in the stage prompts. Change prompts carefully and test with a real model on the owner's key only with their permission.
+The rules for the French (level targets, gender, elision, register, chunks, examples, IPA, who speaks, notes for the learner's first language) live in `INSTRUCTIONS` in `src/lib/content/prompt.ts`. Keep that string byte-stable (prompt caching); put per-call details in the stage prompts. Change prompts carefully and test with a real model on the owner's key only with their permission.
 
 ## Adding a provider
 

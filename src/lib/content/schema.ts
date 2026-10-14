@@ -7,6 +7,9 @@ export const LEVELS = ["A1", "A2", "B1", "B2"] as const;
 export type Level = (typeof LEVELS)[number];
 export type SelfGender = "m" | "f" | "x";
 export type ExplainLang = "en" | "zh";
+/** The learner's first language: notes point out what it does not mark. */
+export type L1 = "zh" | "en" | "other";
+export type Who = "me" | "them";
 
 export const WORD_TYPES = ["noun", "verb", "adj", "adv", "phrase", "other"] as const;
 export type WordType = (typeof WORD_TYPES)[number];
@@ -23,7 +26,7 @@ export type Flag = z.infer<typeof flagSchema>;
 const line = z.string().trim().min(1).max(400);
 const opt = z.string().trim().max(600).nullable().default(null);
 
-export const exampleSchema = z.object({ fr: line, en: line });
+export const exampleSchema = z.object({ fr: line, en: line, zh: opt });
 
 export const wordSchema = z.object({
   id: z.string().min(1).max(40),
@@ -36,6 +39,9 @@ export const wordSchema = z.object({
   plural: opt,
   forms: opt,
   note: opt,
+  ipa: opt, // "/ɛ̃ kʁwasɑ̃/", France French, liaison marked ‿
+  say: opt, // a pronunciation hint in the explanation language, only when there is a trap
+  pattern: opt, // phrases only: "Je voudrais + [chose] : un café · l'addition"
   example: exampleSchema.nullable().default(null),
   flag: flagSchema.nullable().default(null),
 });
@@ -47,6 +53,9 @@ export const sentenceSchema = z.object({
   en: line,
   zh: opt,
   note: opt,
+  who: z.enum(["me", "them"]).nullable().default(null), // who says it: the learner, or the other person
+  say: opt,
+  mine: z.boolean().default(false), // the learner wrote it ("Your turn")
   flag: flagSchema.nullable().default(null),
 });
 export type Sentence = z.infer<typeof sentenceSchema>;
@@ -68,11 +77,20 @@ export type SectionData = z.infer<typeof sectionDataSchema>;
 export const storyLineSchema = sentenceSchema;
 export type StoryLine = Sentence;
 
+/** "Le dialogue": the key exchange, alternating them / me. */
+export const dialogueLineSchema = sentenceSchema;
+export type DialogueLine = Sentence;
+
+/** "Next time, say…": lines for the next time this situation happens. */
+export const nextTimeSchema = z.object({ id: z.string().min(1).max(40), fr: line, en: line, zh: opt });
+export type NextTimeLine = z.infer<typeof nextTimeSchema>;
+
 /** A topic's generation stage, as the end of "Stopped while …". */
 export const STAGE_NAMES: Record<string, string> = {
   outline: "planning the sections",
   sections: "writing the words and sentences",
   story: "retelling your story in French",
+  dialogue: "writing the dialogue",
   check: "checking the French",
 };
 
@@ -96,10 +114,13 @@ export const outlineOut = z.object({
         intro: z.string().describe("One short lead-in line in the explanation language"),
         coreWords: z
           .array(z.string())
-          .describe("4 to 6 core French words or phrases this section will teach, each with article if a noun"),
+          .describe("3 to 6 core French words or phrases this section will teach, each with article if a noun"),
       }),
     )
-    .describe("4 to 7 sections, in the order things happened"),
+    .describe("Sections in the order things happened"),
+  nextTime: z
+    .array(z.object({ fr: z.string(), en: z.string(), zh: z.string().nullable() }))
+    .describe("3 short French lines to say the next time this situation happens (present or futur proche)"),
 });
 export type OutlineOut = z.infer<typeof outlineOut>;
 
@@ -118,7 +139,12 @@ export const sectionOut = z.object({
         .nullable()
         .describe("Verbs: 'je …, vous …, passé composé: j'ai …'. Adjectives: 'masc · fem'. Else null"),
       note: z.string().nullable().describe("One short usage note, or null"),
-      example: z.object({ fr: z.string(), en: z.string() }).describe("A short example sentence using this word"),
+      ipa: z.string().nullable().describe("IPA for France French between slashes, liaison marked ‿"),
+      say: z.string().nullable().describe("A short pronunciation hint when there is a trap for this learner, else null"),
+      pattern: z.string().nullable().describe("Phrases only: the frame with a slot and two other fillers; else null"),
+      example: z
+        .object({ fr: z.string(), en: z.string(), zh: z.string().nullable() })
+        .describe("A short example sentence using this word"),
     }),
   ),
   sentences: z.array(
@@ -127,6 +153,8 @@ export const sectionOut = z.object({
       en: z.string(),
       zh: z.string().nullable(),
       note: z.string().nullable(),
+      who: z.enum(["me", "them"]).describe("me = the learner says it, them = the other person says it"),
+      say: z.string().nullable(),
     }),
   ),
   tips: z.array(z.object({ title: z.string(), text: z.string() })),
@@ -140,10 +168,35 @@ export const storyOut = z.object({
       en: z.string(),
       zh: z.string().nullable(),
       note: z.string().nullable(),
+      say: z.string().nullable(),
     }),
   ),
 });
 export type StoryOut = z.infer<typeof storyOut>;
+
+export const dialogueOut = z.object({
+  lines: z.array(
+    z.object({
+      who: z.enum(["me", "them"]),
+      fr: z.string(),
+      en: z.string(),
+      zh: z.string().nullable(),
+      note: z.string().nullable(),
+      say: z.string().nullable(),
+    }),
+  ),
+});
+export type DialogueOut = z.infer<typeof dialogueOut>;
+
+/** Gentle feedback on a sentence the learner wrote ("Your turn"). */
+export const feedbackOut = z.object({
+  ok: z.boolean().describe("true if a person in France would understand it and it has no real mistake"),
+  fixed: z.string().describe("The sentence corrected, keeping the learner's words; identical if nothing is wrong"),
+  en: z.string().describe("The meaning of the fixed sentence in the explanation language"),
+  note: z.string().nullable().describe("At most two short points, praise first; null if nothing to say"),
+  natural: z.string().nullable().describe("What a native would more naturally say, only if different from fixed"),
+});
+export type FeedbackOut = z.infer<typeof feedbackOut>;
 
 export const checkOut = z.object({
   issues: z.array(
@@ -184,8 +237,21 @@ export function toStoryLines(out: StoryOut): StoryLine[] {
   return out.lines.map((l) => storyLineSchema.parse({ ...l, id: newId("r"), flag: null }));
 }
 
+export function toDialogueLines(out: DialogueOut): DialogueLine[] {
+  return out.lines.map((l) => dialogueLineSchema.parse({ ...l, id: newId("d"), flag: null }));
+}
+
+export function toNextTime(out: OutlineOut["nextTime"]): NextTimeLine[] {
+  return out.slice(0, 5).map((l) => nextTimeSchema.parse({ ...l, id: newId("n") }));
+}
+
 /** Every French line in a topic that can have a recording, in reading order. */
-export function frenchLines(sections: { data: SectionData }[], story: StoryLine[]): string[] {
+export function frenchLines(
+  sections: { data: SectionData }[],
+  story: StoryLine[],
+  dialogue: DialogueLine[] = [],
+  nextTime: NextTimeLine[] = [],
+): string[] {
   const out: string[] = [];
   for (const s of sections) {
     for (const w of s.data.words) {
@@ -195,5 +261,7 @@ export function frenchLines(sections: { data: SectionData }[], story: StoryLine[
     for (const x of s.data.sentences) out.push(x.fr);
   }
   for (const l of story) out.push(l.fr);
+  for (const l of dialogue) out.push(l.fr);
+  for (const l of nextTime) out.push(l.fr);
   return [...new Set(out.map((t) => t.trim()).filter(Boolean))];
 }

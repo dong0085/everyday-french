@@ -29,7 +29,11 @@ export type Provider = {
   name: string;
   uses: Use[];
   keyUrl?: string;
+  keySite?: string; // the name of the page the key comes from, as the guide says it ("Google AI Studio")
   keyHint?: string; // what keys look like
+  blurb?: string; // one line to help choose a service
+  freeTier?: boolean; // can be used without paying
+  privacyUrl?: string; // the service's own privacy page
   guide?: string[]; // numbered steps to get a key
   note?: string;
   baseURL?: string; // OpenAI-compatible endpoint, for providers routed through @ai-sdk/openai-compatible
@@ -44,15 +48,18 @@ export const PROVIDERS: Provider[] = [
   {
     id: "google",
     name: "Google Gemini",
+    keySite: "Google AI Studio",
+    blurb: "Free tier, no card needed. Good French.",
+    freeTier: true,
+    privacyUrl: "https://ai.google.dev/gemini-api/terms",
     uses: ["text"],
     keyUrl: "https://aistudio.google.com/apikey",
     keyHint: "AIza…",
     guide: [
-      "Open Google AI Studio (link below) and sign in with your Google account.",
+      "Open Google AI Studio (button below) and sign in with your Google account.",
       "Click “Create API key”.",
       "Copy the key and paste it here.",
     ],
-    note: "Has a free tier with no card needed. On the free tier, Google may use your prompts to improve its products.",
     liveModels: true,
     textModels: [
       // 2.5 models are closed to new Google accounts (404). 3.8 Flash doubles in price on 2027-01-01.
@@ -63,11 +70,14 @@ export const PROVIDERS: Provider[] = [
   {
     id: "anthropic",
     name: "Anthropic Claude",
+    keySite: "Anthropic Console",
+    blurb: "Strong, careful French. Pay as you go; not used for training.",
+    privacyUrl: "https://www.anthropic.com/legal/privacy",
     uses: ["text"],
     keyUrl: "https://console.anthropic.com/settings/keys",
     keyHint: "sk-ant-…",
     guide: [
-      "Open the Anthropic Console (link below) and sign in.",
+      "Open the Anthropic Console (button below) and sign in.",
       "Add a small amount of credit under Billing (for example $5).",
       "Under API keys, click “Create key”.",
       "Copy the key and paste it here.",
@@ -81,11 +91,14 @@ export const PROVIDERS: Provider[] = [
   {
     id: "openai",
     name: "OpenAI",
+    keySite: "OpenAI Platform",
+    blurb: "One key also gives a natural voice and voice memos.",
+    privacyUrl: "https://openai.com/policies/privacy-policy/",
     uses: ["text", "speech", "transcribe"],
     keyUrl: "https://platform.openai.com/api-keys",
     keyHint: "sk-…",
     guide: [
-      "Open the OpenAI platform (link below) and sign in.",
+      "Open the OpenAI Platform (button below) and sign in.",
       "Add a small amount of credit under Billing (for example $5).",
       "Under API keys, click “Create new secret key”.",
       "Copy the key and paste it here.",
@@ -113,11 +126,15 @@ export const PROVIDERS: Provider[] = [
   {
     id: "elevenlabs",
     name: "ElevenLabs",
+    keySite: "ElevenLabs",
+    blurb: "The most natural French voices. Free plan: about 10,000 characters a month.",
+    freeTier: true,
+    privacyUrl: "https://elevenlabs.io/privacy-policy",
     uses: ["speech", "transcribe"],
     keyUrl: "https://elevenlabs.io/app/settings/api-keys",
     keyHint: "sk_…",
     guide: [
-      "Open ElevenLabs (link below) and sign in.",
+      "Open ElevenLabs (button below) and sign in.",
       "Go to Settings → API keys and create a key with Text to Speech, Voices and Speech to Text access.",
       "Copy the key and paste it here.",
     ],
@@ -132,9 +149,12 @@ export const PROVIDERS: Provider[] = [
   {
     id: "mistral",
     name: "Mistral",
+    keySite: "Mistral console",
+    blurb: "A French company. Strong French, low price.",
+    privacyUrl: "https://mistral.ai/terms#privacy-policy",
     uses: ["text"],
     keyUrl: "https://console.mistral.ai/api-keys",
-    guide: ["Open the Mistral console (link below) and sign in.", "Create an API key.", "Copy the key and paste it here."],
+    guide: ["Open the Mistral console (button below) and sign in.", "Create an API key.", "Copy the key and paste it here."],
     note: "A French company with strong French.",
     liveModels: true,
     textModels: [
@@ -145,10 +165,13 @@ export const PROVIDERS: Provider[] = [
   {
     id: "deepseek",
     name: "DeepSeek",
+    keySite: "DeepSeek Platform",
+    blurb: "Very low price. Needs a small top-up.",
+    privacyUrl: "https://cdn.deepseek.com/policies/en-US/deepseek-privacy-policy.html",
     uses: ["text"],
     keyUrl: "https://platform.deepseek.com/api_keys",
     keyHint: "sk-…",
-    guide: ["Open the DeepSeek platform (link below) and sign in.", "Top up a small balance.", "Create an API key and paste it here."],
+    guide: ["Open the DeepSeek Platform (button below) and sign in.", "Top up a small balance.", "Create an API key and paste it here."],
     liveModels: true,
     textModels: [
       { id: "deepseek-v4-flash", label: "DeepSeek V4 Flash", price: { in: 0.14, out: 0.28 }, tag: "recommended" },
@@ -158,10 +181,13 @@ export const PROVIDERS: Provider[] = [
   {
     id: "openrouter",
     name: "OpenRouter",
+    keySite: "OpenRouter",
+    blurb: "One key for many models from many companies.",
+    privacyUrl: "https://openrouter.ai/privacy",
     uses: ["text"],
     keyUrl: "https://openrouter.ai/settings/keys",
     keyHint: "sk-or-…",
-    guide: ["Open OpenRouter (link below) and sign in.", "Add credit, then create a key.", "Paste the key here and pick any model."],
+    guide: ["Open OpenRouter (button below) and sign in.", "Add credit, then create a key.", "Paste the key here and pick any model."],
     note: "One key for hundreds of models from many companies. The list shows only models that support structured output.",
     baseURL: "https://openrouter.ai/api/v1",
     liveModels: true,
@@ -170,10 +196,13 @@ export const PROVIDERS: Provider[] = [
   {
     id: "groq",
     name: "Groq",
+    keySite: "Groq console",
+    blurb: "Very fast. Also turns voice memos into text.",
+    privacyUrl: "https://groq.com/privacy-policy/",
     uses: ["text", "transcribe"],
     keyUrl: "https://console.groq.com/keys",
     keyHint: "gsk_…",
-    guide: ["Open the Groq console (link below) and sign in.", "Create an API key.", "Paste it here."],
+    guide: ["Open the Groq console (button below) and sign in.", "Create an API key.", "Paste it here."],
     liveModels: true,
     textModels: [
       { id: "openai/gpt-oss-120b", label: "GPT-OSS 120B", tag: "recommended" },
@@ -184,16 +213,20 @@ export const PROVIDERS: Provider[] = [
   {
     id: "xai",
     name: "xAI Grok",
+    keySite: "xAI console",
+    blurb: "Grok models.",
+    privacyUrl: "https://x.ai/legal/privacy-policy",
     uses: ["text"],
     keyUrl: "https://console.x.ai",
     keyHint: "xai-…",
-    guide: ["Open the xAI console (link below) and sign in.", "Create an API key.", "Paste it here."],
+    guide: ["Open the xAI console (button below) and sign in.", "Create an API key.", "Paste it here."],
     liveModels: true,
     textModels: [{ id: "grok-4.20-non-reasoning", label: "Grok 4.20", tag: "recommended" }],
   },
   {
     id: "custom",
     name: "Custom (OpenAI-compatible)",
+    blurb: "Advanced: any OpenAI-compatible service, with your own address.",
     uses: ["text"],
     note: "Any service with an OpenAI-compatible chat API over https. You give the base URL and the model name.",
     liveModels: true,
@@ -204,6 +237,7 @@ export const PROVIDERS: Provider[] = [
 export const MOCK_PROVIDER: Provider = {
   id: "mock",
   name: "Mock (tests only)",
+  blurb: "For automated tests. Makes fake topics at no cost.",
   uses: ["text", "speech", "transcribe"],
   textModels: [{ id: "mock-model", label: "Mock model" }],
   speechModels: [{ id: "mock-tts", label: "Mock TTS" }],
@@ -224,13 +258,22 @@ export function providersFor(use: Use, includeMock = false): Provider[] {
 /** Rough tokens for one topic (all stages), for cost estimates. */
 export const TOPIC_TOKENS = { in: 30_000, out: 9_000 };
 
+/** About how much one topic costs with this model, in USD (null when the price is unknown). */
 export function topicCostUsd(providerId: string, modelId: string): number | null {
   const m = provider(providerId)?.textModels?.find((x) => x.id === modelId);
   if (!m?.price) return null;
   return (TOPIC_TOKENS.in * m.price.in + TOPIC_TOKENS.out * m.price.out) / 1_000_000;
 }
 
-export function formatUsd(n: number): string {
-  if (n < 0.01) return "< $0.01";
-  return "$" + (n < 1 ? n.toFixed(2) : n.toFixed(2));
+/** The text model a new key starts with (the one tagged "recommended", else the first). */
+export function defaultTextModel(p: Provider): TextModel | undefined {
+  return p.textModels?.find((m) => m.tag === "recommended") ?? p.textModels?.[0];
 }
+
+/** Words for the model tags, shown as small chips. */
+export const TAG_LABEL: Record<string, string> = {
+  recommended: "Recommended",
+  best: "Best quality",
+  cheap: "Cheapest",
+  "may-make-mistakes": "May make French mistakes",
+};

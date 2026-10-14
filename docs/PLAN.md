@@ -1,4 +1,4 @@
-# Everyday French — final v1 plan
+# Everyday French — plan (v1, then v2)
 
 Written 2026-10-13 after five reviews (education, security, product/UX, platform, AI integration).
 This file records **what v1 is and why**. AGENTS.md explains how the code is organised.
@@ -65,3 +65,32 @@ A free, public web app. A learner signs in with Google, tells the app what just 
 
 ## Out of v1
 Spaced repetition and scores, public sharing, languages other than French, native apps, payments, offline mode, cross-user clip sharing, voice previews made with the owner's key, Sentry.
+
+---
+
+# v2 — from MVP to a finished study app
+
+Written 2026-10-15 after four more reviews: onboarding/home/create UX, topic study UX, settings/design system, and a language-learning review (second-language acquisition, Chinese-L1 learners of French). v1 made good material on day 0; v2 is about **what happens after day 0** and about feeling finished.
+
+## Learning decisions (education review)
+- **Light spaced review replaces "20 random lines".** `review_items` rows, 6 boxes → 1 / 3 / 7 / 14 / 30 / 30 days. Got it / Not yet / Skip only decide when a line comes back. Max 20 per day ("20 now, the rest another day"), no overdue pile, no streaks, scores or percentages. Nothing graduates out; lines come back monthly. In the deck: core words, phrases, the learner's lines ("me" sentences, own sentences, story, "me" dialogue lines); extra words only when starred. The example topic is not in the deck (it is in "Practise anyway").
+- **Retrieval in context.** Word cards are fill-the-gap on the word's own example sentence; lines the other person says are listen-first (with optional dictation); the learner's lines are meaning-first; build-the-sentence tiles from box 1; a "le or la?" check on nouns.
+- **Production: "Your turn".** One sentence of the learner's own per section, one cheap AI call (< $0.001) for gentle feedback (praise first, at most two points, a more natural version), saved as the learner's own line and reviewed like the rest.
+- **Who speaks.** Sentences are marked *me* / *them* and come as exchange pairs; a short **dialogue** stage (6–14 lines by level) enables **role-play** (the app says their lines, the learner says theirs, then roles swap).
+- **Pronunciation for Chinese speakers.** Every word has IPA (France French, liaison ‿); `say` hints only where there is a trap (liaison, silent letters, nasals, u/ou, r, e muet, h). A static `/sounds` page explains the traps with pinyin comparisons where they help. The learner's first language (`profiles.l1`) is passed to the model so notes point at what that language does not mark.
+- **Shadowing that leaves room to speak.** The pause after each play is max(1.4 × clip + 0.7 s, 1.5 s); Repeat plays normal → slow → normal with a "your turn" bar; Record & compare keeps the learner's voice in memory only.
+- **A shape for the first session.** "Study this topic" (about 10 minutes): Listen → Words → Say it → Retell → Your turn → done (`topics.studied_at`).
+- **Fewer, deeper sections**: A1 3–4, A2 4–5, B1 4–6, B2 4–7. **Recycling**: the outline gets the learner's known words (from other topics, max 80) so they are reused, not re-taught.
+- **Bridge to real life**: 3 "Next time, say…" lines per topic; "I used it →" starts the next topic from them.
+
+## Product and design decisions (UX reviews)
+- **Design system**: tokens for colour (light/dark, `data-theme` override), type, spacing, radius, motion; 44 px tap targets; control borders ≥ 3:1 contrast; self-hosted Literata for French; CJK font stack and `lang="zh-Hans"` for Chinese; reduced motion keeps busy indicators. Page CSS split by area.
+- **Navigation**: bottom tab bar on phones (Topics · Review · + · Words · Settings), header nav on desktop; Admin moved into Settings. On a topic the tab bar gives way to the study bar.
+- **Create**: story first; idea chips; draft saved on the device (survives leaving to get a key); voice memos work with no transcription key; connecting a key starts writing at once.
+- **Waiting**: a step list with progress and elapsed time instead of an empty topic; "C'est prêt !" when done.
+- **Honest errors**: `api()` turns network failures into an "offline" message; a database outage shows "Everyday French is resting", never an empty library; an offline page for the installed app (service worker caches only that signed-out page).
+- **Settings** in groups (Learning, Listening, AI services, This month, Appearance, Account, Danger zone); device voice picker; money-first usage; every destructive action uses one confirm sheet that says what will happen.
+- The recommended text provider stays **Google Gemini** (free tier); its card states plainly that the free tier may use prompts to improve Google's products and offers Claude Haiku (≈ $0.01 per topic, not used for training).
+
+## Still out
+Push notifications and reminders, streaks or scores, public sharing, languages other than French, native apps, payments, full offline study, speech-recognition pronunciation scoring, a second TTS voice for dialogues.

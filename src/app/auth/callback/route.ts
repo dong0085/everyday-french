@@ -6,7 +6,11 @@ import { safeNext } from "@/lib/site";
 export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get("code");
   const next = safeNext(req.nextUrl.searchParams.get("next"));
-  if (!code) return NextResponse.redirect(new URL("/?error=signin", req.url));
+  // Google sends ?error=access_denied when the person closes or cancels the Google screen.
+  if (!code) {
+    const cancelled = req.nextUrl.searchParams.get("error") === "access_denied";
+    return NextResponse.redirect(new URL(cancelled ? "/?error=cancelled" : "/?error=signin", req.url));
+  }
 
   const supabase = await createClient();
   const { data, error } = await supabase.auth.exchangeCodeForSession(code);

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { addClips } from "../player";
 import { api, ApiError, Sheet, Spinner, toast } from "../ui";
+import { Icon } from "../Icon";
 
 type Missing = { text: string; prev: string | null; next: string | null };
 type Info = { clips: Record<string, string>; missing: Missing[]; chars: number; tts: { provider: string; model: string; voiceName: string } | null };
@@ -44,12 +45,13 @@ export function AudioBar({ topicId, version }: { topicId: string; version: numbe
 
   if (!info.tts)
     return (
-      <div className="banner">
-        <p className="small">Lines play with your device&apos;s voice. A natural recorded voice is clearer to copy.</p>
-        <Link href="/settings#voice" className="btn btn-small">
-          Set up natural audio
-        </Link>
-      </div>
+      <p className="voice-note">
+        <Icon name="speaker" size={16} />
+        <span>
+          Playing with your device&apos;s voice.{" "}
+          <Link href="/settings#voice">Set up natural audio</Link>
+        </span>
+      </p>
     );
   if (n === 0 && !progress) return null;
 
@@ -106,12 +108,17 @@ export function AudioBar({ topicId, version }: { topicId: string; version: numbe
 
   return (
     <>
-      <div className="banner">
-        <p className="small">
-          {n} line{n === 1 ? "" : "s"} without a recording · voice: {info.tts.voiceName}
-        </p>
-        <button className="btn btn-small btn-primary" onClick={openSheet} data-testid="audio-open">
-          Generate audio
+      <div className="audio-card">
+        <div className="grow">
+          <p className="audio-title">
+            Make natural recordings for {n} line{n === 1 ? "" : "s"}
+          </p>
+          <p className="hint m-0">
+            {el ? `≈ ${credits.toLocaleString()} credits` : usd !== null ? `≈ $${usd < 0.01 ? "0.01" : usd.toFixed(2)}` : `${info.chars.toLocaleString()} characters`} · {info.tts.voiceName}
+          </p>
+        </div>
+        <button className="btn btn-primary" onClick={openSheet} data-testid="audio-open">
+          <Icon name="sparkle" size={18} /> Make recordings
         </button>
       </div>
       <Sheet open={open} onClose={() => !progress && setOpen(false)} title="Generate audio">
@@ -145,7 +152,7 @@ export function AudioBar({ topicId, version }: { topicId: string; version: numbe
           )}
           {progress ? (
             <div className="stack">
-              <div className="status-line">
+              <div className="status-line" role="status">
                 <Spinner /> {progress.done} of {progress.total} done{progress.failed ? ` · ${progress.failed} failed` : ""}
               </div>
               <div className="progress" aria-hidden="true">

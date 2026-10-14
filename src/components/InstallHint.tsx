@@ -39,7 +39,7 @@ export function InstallHint() {
 
   if (!allowed || dismissed || (!ios && !evt)) return null;
   return (
-    <div className="banner" style={{ marginTop: 24 }}>
+    <div className="banner mt-6">
       <p className="small">
         {ios ? "Add Everyday French to your home screen: tap Share, then “Add to Home Screen”." : "Install Everyday French to open it like an app."}
       </p>

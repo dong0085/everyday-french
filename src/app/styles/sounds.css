@@ -1,0 +1,60 @@
+/* /sounds: the French-sounds help page (static, works signed out). Tokens only; no colours of its own. */
+
+.sounds .snd-nav { flex-wrap: wrap; overflow: visible; margin: 16px 0 8px; }
+.sounds .snd-nav a { padding: 4px 12px; }
+
+.snd-section { margin-top: 36px; padding-top: 20px; border-top: 1px solid var(--line); }
+.snd-section h2 { margin-top: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.snd-sub { font-family: var(--sans); font-weight: 400; font-size: var(--fs-md); color: var(--muted); }
+.snd-zh { font-family: var(--zh); margin: 6px 0 0; max-width: 40em; }
+.snd-section p { margin: 12px 0 0; }
+.snd-section p strong { color: var(--text); }
+
+.snd-how { display: block; margin: 14px 0 0; }
+.snd-how p { margin: 0; max-width: none; }
+
+/* example lists: play button, French, IPA, meaning */
+.snd-list { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 6px; }
+.snd-ex {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 10px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  max-width: none;
+}
+.snd-ex .icon-btn { flex: none; margin-top: 1px; }
+.snd-ex-text { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; min-width: 0; line-height: 1.4; }
+.snd-ex-text .fr { font-size: 1.1rem; }
+.snd-ex-text .ipa { font-size: 0.92rem; white-space: nowrap; }
+.snd-ex-text .en { font-size: var(--fs-sm); flex-basis: 100%; }
+
+/* minimal pairs sit side by side */
+.snd-pairs { grid-template-columns: 1fr 1fr; gap: 6px; }
+.snd-pairs .snd-ex:nth-child(odd) { position: relative; }
+.snd-pairs .snd-ex:nth-child(odd)::after {
+  content: "vs";
+  position: absolute;
+  right: -3px;
+  top: 50%;
+  transform: translate(50%, -50%);
+  z-index: 1;
+  font-size: var(--fs-xs);
+  color: var(--faint);
+  background: var(--bg);
+  padding: 0 3px;
+  border-radius: var(--r-pill);
+}
+
+.snd-foot { margin-top: 36px; }
+
+@media (min-width: 640px) {
+  .snd-list:not(.snd-pairs) { grid-template-columns: 1fr 1fr; }
+  .snd-ex-text .en { flex-basis: auto; }
+}
+@media (max-width: 400px) {
+  .snd-pairs .snd-ex { padding: 8px; }
+  .snd-ex-text .fr { font-size: 1rem; }
+}

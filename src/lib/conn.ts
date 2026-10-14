@@ -8,7 +8,7 @@ export type SpeechConn = Conn & { voice: string; voiceName?: string };
 
 export async function connections(userId: string) {
   const supabase = await createClient();
-  const { data } = await supabase.from("profiles").select("llm, tts, stt, level, self_gender, explain_lang, zh_gloss").eq("id", userId).single();
+  const { data } = await supabase.from("profiles").select("llm, tts, stt, level, self_gender, explain_lang, zh_gloss, l1").eq("id", userId).single();
   if (!data) throw new AppError("bad_request", "Profile missing.", 404);
   return {
     profile: data,

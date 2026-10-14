@@ -8,11 +8,13 @@ export async function signIn(page: Page, who: string) {
   await page.waitForURL(/\/topics\/|\/$/);
 }
 
-/** Connects the mock provider from the "Connect…" sheet. */
-export async function connectMock(page: Page) {
+/** Connects the mock provider from the "Connect…" sheet. From Settings (`done`), a success panel follows. */
+export async function connectMock(page: Page, opts: { done?: boolean } = {}) {
   await page.getByRole("button", { name: /Other providers/ }).click();
   await page.getByRole("button", { name: /Mock \(tests only\)/ }).click();
   await page.getByRole("button", { name: "Use mock provider" }).click();
+  // In Settings the sheet then says what was set up; Done closes it. While making a topic, writing starts at once.
+  if (opts.done) await page.getByRole("button", { name: "Done" }).click();
 }
 
 export const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);

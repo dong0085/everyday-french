@@ -158,7 +158,14 @@ export async function setupChecks(heartbeatAt: string | null): Promise<Check[]> 
       detail: heartbeatAt ? `Last run ${when(heartbeatAt)}.` : "Never ran.",
     },
     { label: "Cron secret", ok: Boolean(process.env.CRON_SECRET), detail: "Needed by the daily keep-awake job." },
-    { label: "Mock providers off", ok: !mockAllowed(), detail: "Test-only providers and test sign-in are hidden." },
+    mockAllowed()
+      ? {
+          label: "Mock providers: on (development only)",
+          ok: false,
+          optional: true,
+          detail: "Test-only providers and test sign-in show here. They are always off in production.",
+        }
+      : { label: "Mock providers: off", ok: true, detail: "Test-only providers and test sign-in are hidden." },
     {
       label: "Contact email",
       ok: Boolean(process.env.NEXT_PUBLIC_CONTACT_EMAIL),

@@ -14,13 +14,13 @@ test("first visit → example → make a topic → audio → study → search �
   await expect(page.locator(".g-m").first()).toBeVisible();
 
   // Make a topic: the AI setup appears only at Generate, and generation then starts by itself.
-  await page.getByRole("link", { name: /Make your own/ }).click();
+  await page.getByRole("link", { name: /Make my own/ }).click();
   await expect(page.getByRole("heading", { name: "What happened?" })).toBeVisible();
   await page.getByRole("button", { name: /^A1/ }).click();
-  await page.getByRole("button", { name: /elle/ }).click();
+  await page.getByRole("button", { name: /allée/ }).click();
   await page.locator("textarea").fill("Hier, j'ai cherché une voiture d'occasion sur Leboncoin. I called the seller, took a test drive and paid 9 500 €.");
   await page.getByTestId("generate").click();
-  await expect(page.getByRole("dialog", { name: "Connect an AI account" })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Connect an AI service" })).toBeVisible();
   await connectMock(page);
   await page.waitForURL(/\/topics\/[0-9a-f-]+$/);
 
@@ -29,10 +29,10 @@ test("first visit → example → make a topic → audio → study → search �
   await expect(page.getByRole("heading", { name: "Mon histoire" })).toBeVisible({ timeout: 30_000 });
   await expect(page.getByText(/Checking the French|Writing/)).toHaveCount(0, { timeout: 30_000 });
   await expect(page.getByRole("button", { name: "Use suggestion" }).first()).toBeVisible();
-  await page.getByRole("button", { name: "It's fine" }).first().click();
+  await page.getByRole("button", { name: "Keep mine" }).first().click();
 
   // The words the topic was made from, and the full prompt the AI got.
-  await page.getByText("What you wrote (the prompt for this topic)").click();
+  await page.getByText("How this topic was made").click();
   await expect(page.locator(".story-box > p").first()).toHaveText(/test drive and paid 9 500 €/);
   await page.getByText("Full prompt sent to the AI").click();
   await expect(page.locator(".prompt-full pre")).toContainText("TASK: OUTLINE");
@@ -41,8 +41,8 @@ test("first visit → example → make a topic → audio → study → search �
   // No voice yet → device voice, with a link to set up natural audio.
   const topicUrl = page.url();
   await page.getByRole("link", { name: "Set up natural audio" }).click();
-  await page.locator("#voice").getByRole("button", { name: "Connect an account" }).click();
-  await connectMock(page);
+  await page.locator("#voice").getByRole("button", { name: /^Connect/ }).click();
+  await connectMock(page, { done: true });
   await expect(page.locator("#voice")).toContainText("Mock voice");
 
   // One-tap audio for the whole topic.
@@ -54,15 +54,17 @@ test("first visit → example → make a topic → audio → study → search �
   await expect(page.locator(".icon-btn.device")).toHaveCount(0); // every line now has a recording
 
   // Quiz mode is remembered and hides the French.
+  await page.getByRole("button", { name: /Study mode/ }).click();
   await page.getByRole("button", { name: "Hide French", exact: true }).click();
-  await expect(page.locator("main")).toHaveAttribute("data-mode", "hide-fr");
+  await expect(page.locator("main[data-mode]")).toHaveAttribute("data-mode", "hide-fr");
   await page.reload();
-  await expect(page.locator("main")).toHaveAttribute("data-mode", "hide-fr");
+  await expect(page.locator("main[data-mode]")).toHaveAttribute("data-mode", "hide-fr");
+  await page.getByRole("button", { name: /Study mode/ }).click();
   await page.getByRole("button", { name: "Show all", exact: true }).click();
 
   // Edit a sentence.
   await page.getByRole("button", { name: /More/ }).click();
-  await page.getByRole("button", { name: "Edit this topic" }).click();
+  await page.getByRole("menuitem", { name: "Edit this topic" }).click();
   await page.locator("#story").getByRole("button", { name: "Edit line" }).first().click();
   await page.locator("#story input").first().fill("J'ai cherché une petite voiture.");
   const saved = page.waitForResponse((r) => r.request().method() === "PATCH" && r.url().includes("/api/topics/"));
@@ -76,17 +78,29 @@ test("first visit → example → make a topic → audio → study → search �
   await page.getByPlaceholder(/Search every topic/).fill("kilometrage");
   await expect(page.getByText("le kilométrage").first()).toBeVisible();
 
-  // Review deck.
+  // Review: a new topic's cards are due tomorrow, so today offers a practice shuffle (no grading).
   await page.goto("/review");
-  await expect(page.getByText(/1 \/ \d+/)).toBeVisible();
-  await page.getByRole("button", { name: /Next/ }).click();
-  await expect(page.getByText(/2 \/ \d+/)).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Nothing due today." })).toBeVisible();
+  await page.getByRole("link", { name: /Practise anyway/ }).click();
+  await expect(page.getByText(/^1 of \d+$/)).toBeVisible();
+  await page.getByRole("button", { name: /Show answer|Show the sentence/ }).click();
+  await page.getByRole("button", { name: /^Next/ }).click();
+  await expect(page.getByText(/^2 of \d+$/)).toBeVisible();
+
+  // Word bank: accent-insensitive search, star an extra word for review.
+  await page.goto("/words");
+  await page.getByPlaceholder(/Search in French/).fill("kilometrage");
+  await expect(page.getByText("le kilométrage").first()).toBeVisible();
+  const starred = page.waitForResponse((r) => r.url().endsWith("/api/review/star"));
+  await page.getByRole("button", { name: /Star for review: le kilométrage/ }).first().click();
+  expect((await starred).status()).toBe(200);
+  await expect(page.getByRole("button", { name: /Star for review: le kilométrage/ }).first()).toHaveAttribute("aria-pressed", "true");
 
   // Save for later, then turn the saved note into a topic later.
   await page.goto("/new");
   await page.locator("textarea").fill("Pharmacy: I asked for something for a sore throat.");
   await page.getByRole("button", { name: "Save for later" }).click();
-  await expect(page.getByText(/Saved for later \(1\)/)).toBeVisible();
+  await expect(page.getByText(/Saved for later · 1/)).toBeVisible();
   await page.getByRole("link", { name: "Make topic" }).click();
   await expect(page.locator("textarea")).toHaveValue(/sore throat/);
 

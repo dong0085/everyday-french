@@ -31,6 +31,7 @@ export const POST = api("json", async ({ req, userId }) => {
       explain_lang: profile.explain_lang,
       self_gender: profile.self_gender,
       zh_gloss: profile.zh_gloss,
+      l1: profile.l1,
       status: "generating",
       stage: "outline",
       model_used: `${conn.provider}/${conn.model}`,

@@ -15,6 +15,8 @@ export async function proxy(request: NextRequest) {
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' blob: data: https:",
     "font-src 'self'",
+    // The offline fallback service worker (public/sw.js).
+    "worker-src 'self'",
     // Recordings come from Supabase Storage; ElevenLabs voice previews from their CDN.
     `media-src 'self' blob: data: https: ${supabase}`,
     `connect-src 'self'${dev ? ` ${supabase} ws:` : ""}`,

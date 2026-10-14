@@ -1,36 +1,37 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { randomInt } from "node:crypto";
-import { createClient, getUserId } from "@/lib/supabase/server";
-import { sectionDataSchema, type StoryLine } from "@/lib/content/schema";
+import { randomUUID } from "node:crypto";
+import { getUserId } from "@/lib/supabase/server";
 import { clipsFor } from "@/lib/audio/clips";
 import { connections } from "@/lib/conn";
-import { ReviewDeck, type Card } from "@/components/ReviewDeck";
+import { backfillReviewItems, loadDueDeck, loadPracticeDeck, todayIn } from "@/lib/review";
+import { ReviewDeck, ReviewEmpty } from "@/components/ReviewDeck";
+import type { Card } from "@/components/review/cards";
 
 export const metadata: Metadata = { title: "Review" };
 
-export default async function ReviewPage() {
+export default async function ReviewPage({ searchParams }: { searchParams: Promise<{ practice?: string }> }) {
   const userId = await getUserId();
   if (!userId) redirect("/");
-  const supabase = await createClient();
-  const { data } = await supabase.from("topics").select("id, title_fr, story_fr, topic_sections(data)").eq("status", "ready");
+  const practice = (await searchParams).practice === "1";
+  const tz = (await cookies()).get("ef.tz")?.value;
+  const today = todayIn(tz ? decodeURIComponent(tz) : null);
 
-  const pool: Card[] = [];
-  for (const t of data ?? []) {
-    for (const s of t.topic_sections ?? []) {
-      const d = sectionDataSchema.parse(s.data);
-      for (const w of d.words) pool.push({ fr: w.fr, en: w.en, zh: w.zh, kind: w.type === "phrase" ? "phrase" : "word", gender: w.gender, topicId: t.id, topicTitleFr: t.title_fr });
-      for (const x of d.sentences) pool.push({ fr: x.fr, en: x.en, zh: x.zh, kind: "sentence", gender: null, topicId: t.id, topicTitleFr: t.title_fr });
-    }
-    for (const l of (t.story_fr as StoryLine[]) ?? []) pool.push({ fr: l.fr, en: l.en, zh: l.zh, kind: "sentence", gender: null, topicId: t.id, topicTitleFr: t.title_fr });
+  let cards: Card[];
+  let dueTotal = 0;
+  let tomorrow = 0;
+  if (practice) cards = await loadPracticeDeck(userId);
+  else {
+    await backfillReviewItems(userId);
+    const deck = await loadDueDeck(userId, today);
+    if (!deck.cards.length) return <ReviewEmpty hasItems={deck.hasItems} tomorrow={deck.tomorrow} today={today} />;
+    ({ cards, dueTotal, tomorrow } = deck);
   }
-  // Fisher–Yates, then 20 cards.
-  for (let i = pool.length - 1; i > 0; i--) {
-    const j = randomInt(i + 1);
-    [pool[i], pool[j]] = [pool[j], pool[i]];
-  }
-  const cards = pool.slice(0, 20);
+
   const { tts } = await connections(userId);
-  const clips = await clipsFor(userId, cards.map((c) => c.fr), tts);
-  return <ReviewDeck cards={cards} clips={clips} />;
+  const texts = cards.flatMap((c) => (c.example ? [c.fr, c.example.fr] : [c.fr]));
+  const clips = await clipsFor(userId, texts, tts);
+  // A new key each render: "New shuffle" / "Keep going" (router.refresh) start a fresh deck.
+  return <ReviewDeck key={randomUUID()} cards={cards} clips={clips} practice={practice} dueTotal={dueTotal} tomorrow={tomorrow} today={today} />;
 }

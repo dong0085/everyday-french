@@ -37,6 +37,32 @@ export type Database = {
                   Relationships: [
                     
                   ]
+                },"attempts": {
+                  Row: {
+                    "created_at": string,"feedback": Json | null,"id": string,"section_id": string | null,"text": string,"topic_id": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"feedback"?: Json | null,"id"?: string,"section_id"?: string | null,"text": string,"topic_id": string,"user_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"feedback"?: Json | null,"id"?: string,"section_id"?: string | null,"text"?: string,"topic_id"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "attempts_section_id_fkey"
+      columns: ["section_id"]
+isOneToOne: false
+      referencedRelation: "topic_sections"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "attempts_topic_id_fkey"
+      columns: ["topic_id"]
+isOneToOne: false
+      referencedRelation: "topics"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"captures": {
                   Row: {
                     "audio_mime": string | null,"audio_path": string | null,"created_at": string,"id": string,"status": string,"text": string,"topic_id": string | null,"user_id": string
@@ -81,17 +107,37 @@ export type Database = {
                   ]
                 },"profiles": {
                   Row: {
-                    "created_at": string,"display_name": string | null,"example_seeded": boolean,"explain_lang": string,"id": string,"level": string,"llm": Json | null,"self_gender": string,"set_up_at": string | null,"stt": Json | null,"tts": Json | null,"updated_at": string,"zh_gloss": boolean
+                    "created_at": string,"display_name": string | null,"example_seeded": boolean,"explain_lang": string,"id": string,"l1": string,"level": string,"llm": Json | null,"self_gender": string,"set_up_at": string | null,"stt": Json | null,"tts": Json | null,"updated_at": string,"zh_gloss": boolean
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"display_name"?: string | null,"example_seeded"?: boolean,"explain_lang"?: string,"id": string,"level"?: string,"llm"?: Json | null,"self_gender"?: string,"set_up_at"?: string | null,"stt"?: Json | null,"tts"?: Json | null,"updated_at"?: string,"zh_gloss"?: boolean
+                    "created_at"?: string,"display_name"?: string | null,"example_seeded"?: boolean,"explain_lang"?: string,"id": string,"l1"?: string,"level"?: string,"llm"?: Json | null,"self_gender"?: string,"set_up_at"?: string | null,"stt"?: Json | null,"tts"?: Json | null,"updated_at"?: string,"zh_gloss"?: boolean
                   }
                   Update: {
-                    "created_at"?: string,"display_name"?: string | null,"example_seeded"?: boolean,"explain_lang"?: string,"id"?: string,"level"?: string,"llm"?: Json | null,"self_gender"?: string,"set_up_at"?: string | null,"stt"?: Json | null,"tts"?: Json | null,"updated_at"?: string,"zh_gloss"?: boolean
+                    "created_at"?: string,"display_name"?: string | null,"example_seeded"?: boolean,"explain_lang"?: string,"id"?: string,"l1"?: string,"level"?: string,"llm"?: Json | null,"self_gender"?: string,"set_up_at"?: string | null,"stt"?: Json | null,"tts"?: Json | null,"updated_at"?: string,"zh_gloss"?: boolean
                   }
                   Relationships: [
                     
+                  ]
+                },"review_items": {
+                  Row: {
+                    "box": number,"created_at": string,"due_on": string,"fr": string,"id": string,"kind": string,"lapses": number,"last_seen": string | null,"line_id": string,"reps": number,"starred": boolean,"topic_id": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "box"?: number,"created_at"?: string,"due_on"?: string,"fr": string,"id"?: string,"kind": string,"lapses"?: number,"last_seen"?: string | null,"line_id": string,"reps"?: number,"starred"?: boolean,"topic_id": string,"user_id": string
+                  }
+                  Update: {
+                    "box"?: number,"created_at"?: string,"due_on"?: string,"fr"?: string,"id"?: string,"kind"?: string,"lapses"?: number,"last_seen"?: string | null,"line_id"?: string,"reps"?: number,"starred"?: boolean,"topic_id"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "review_items_topic_id_fkey"
+      columns: ["topic_id"]
+isOneToOne: false
+      referencedRelation: "topics"
+      referencedColumns: ["id"]
+    }
                   ]
                 },"topic_sections": {
                   Row: {
@@ -115,14 +161,14 @@ isOneToOne: false
                   ]
                 },"topics": {
                   Row: {
-                    "answers": Json | null,"created_at": string,"error": string | null,"explain_lang": string,"gen_started_at": string | null,"gender_note": string | null,"id": string,"is_example": boolean,"level": string,"model_used": string | null,"self_gender": string,"source_text": string,"stage": string,"status": string,"story": string,"story_fr": NonNullable<Json>,"summary": string,"title": string,"title_fr": string,"updated_at": string,"user_id": string,"zh_gloss": boolean
+                    "answers": Json | null,"created_at": string,"dialogue": NonNullable<Json>,"error": string | null,"explain_lang": string,"gen_started_at": string | null,"gender_note": string | null,"id": string,"is_example": boolean,"l1": string,"level": string,"model_used": string | null,"next_time": NonNullable<Json>,"self_gender": string,"source_text": string,"stage": string,"status": string,"story": string,"story_fr": NonNullable<Json>,"studied_at": string | null,"summary": string,"title": string,"title_fr": string,"updated_at": string,"user_id": string,"zh_gloss": boolean
                   }
                   ComputedFields: never
                   Insert: {
-                    "answers"?: Json | null,"created_at"?: string,"error"?: string | null,"explain_lang"?: string,"gen_started_at"?: string | null,"gender_note"?: string | null,"id"?: string,"is_example"?: boolean,"level"?: string,"model_used"?: string | null,"self_gender"?: string,"source_text"?: string,"stage"?: string,"status"?: string,"story"?: string,"story_fr"?: NonNullable<Json>,"summary"?: string,"title"?: string,"title_fr"?: string,"updated_at"?: string,"user_id": string,"zh_gloss"?: boolean
+                    "answers"?: Json | null,"created_at"?: string,"dialogue"?: NonNullable<Json>,"error"?: string | null,"explain_lang"?: string,"gen_started_at"?: string | null,"gender_note"?: string | null,"id"?: string,"is_example"?: boolean,"l1"?: string,"level"?: string,"model_used"?: string | null,"next_time"?: NonNullable<Json>,"self_gender"?: string,"source_text"?: string,"stage"?: string,"status"?: string,"story"?: string,"story_fr"?: NonNullable<Json>,"studied_at"?: string | null,"summary"?: string,"title"?: string,"title_fr"?: string,"updated_at"?: string,"user_id": string,"zh_gloss"?: boolean
                   }
                   Update: {
-                    "answers"?: Json | null,"created_at"?: string,"error"?: string | null,"explain_lang"?: string,"gen_started_at"?: string | null,"gender_note"?: string | null,"id"?: string,"is_example"?: boolean,"level"?: string,"model_used"?: string | null,"self_gender"?: string,"source_text"?: string,"stage"?: string,"status"?: string,"story"?: string,"story_fr"?: NonNullable<Json>,"summary"?: string,"title"?: string,"title_fr"?: string,"updated_at"?: string,"user_id"?: string,"zh_gloss"?: boolean
+                    "answers"?: Json | null,"created_at"?: string,"dialogue"?: NonNullable<Json>,"error"?: string | null,"explain_lang"?: string,"gen_started_at"?: string | null,"gender_note"?: string | null,"id"?: string,"is_example"?: boolean,"l1"?: string,"level"?: string,"model_used"?: string | null,"next_time"?: NonNullable<Json>,"self_gender"?: string,"source_text"?: string,"stage"?: string,"status"?: string,"story"?: string,"story_fr"?: NonNullable<Json>,"studied_at"?: string | null,"summary"?: string,"title"?: string,"title_fr"?: string,"updated_at"?: string,"user_id"?: string,"zh_gloss"?: boolean
                   }
                   Relationships: [
                     
