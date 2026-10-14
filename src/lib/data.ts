@@ -2,6 +2,7 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { frenchLines, sectionDataSchema, type SectionData, type StoryLine } from "@/lib/content/schema";
+import { INSTRUCTIONS, learnerOf, outlinePrompt } from "@/lib/content/prompt";
 
 export type Profile = Awaited<ReturnType<typeof getProfile>>;
 
@@ -75,6 +76,9 @@ export type FullTopic = {
   summary: string;
   story: string;
   sourceText: string;
+  answers: { question: string; answer: string }[];
+  /** The rules and first-step prompt the AI got, rebuilt from the saved story and settings. Null for the example. */
+  prompt: string | null;
   level: string;
   status: string;
   stage: string;
@@ -98,6 +102,7 @@ export async function getTopic(id: string): Promise<FullTopic | null> {
   const { data: t } = await supabase.from("topics").select("*").eq("id", id).maybeSingle();
   if (!t) return null;
   const { data: sections } = await supabase.from("topic_sections").select("*").eq("topic_id", id).order("position");
+  const answers = Array.isArray(t.answers) ? (t.answers as { question: string; answer: string }[]) : [];
   return {
     id: t.id,
     title: t.title,
@@ -105,6 +110,8 @@ export async function getTopic(id: string): Promise<FullTopic | null> {
     summary: t.summary,
     story: t.story,
     sourceText: t.source_text,
+    answers: answers.filter((a) => a.answer.trim()),
+    prompt: t.is_example ? null : `${INSTRUCTIONS}\n\n${outlinePrompt(learnerOf(t), t.source_text, answers)}`,
     level: t.level,
     status: t.status,
     stage: t.stage,

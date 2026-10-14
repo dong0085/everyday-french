@@ -31,6 +31,13 @@ test("first visit → example → make a topic → audio → study → search �
   await expect(page.getByRole("button", { name: "Use suggestion" }).first()).toBeVisible();
   await page.getByRole("button", { name: "It's fine" }).first().click();
 
+  // The words the topic was made from, and the full prompt the AI got.
+  await page.getByText("What you wrote (the prompt for this topic)").click();
+  await expect(page.locator(".story-box > p").first()).toHaveText(/test drive and paid 9 500 €/);
+  await page.getByText("Full prompt sent to the AI").click();
+  await expect(page.locator(".prompt-full pre")).toContainText("TASK: OUTLINE");
+  await expect(page.locator(".prompt-full pre")).toContainText("- Level: A1");
+
   // No voice yet → device voice, with a link to set up natural audio.
   const topicUrl = page.url();
   await page.getByRole("link", { name: "Set up natural audio" }).click();

@@ -10,7 +10,7 @@ import { provider as providerInfo } from "@/lib/providers/catalog";
 import { AppError, logError, toAppError } from "@/lib/providers/errors";
 import { recordUsage } from "@/lib/usage";
 import { ruleChecks } from "./checks";
-import { checkPrompt, outlinePrompt, sectionPrompt, storyPrompt, type Learner } from "./prompt";
+import { checkPrompt, learnerOf, outlinePrompt, sectionPrompt, storyPrompt } from "./prompt";
 import {
   checkOut,
   outlineOut,
@@ -53,15 +53,6 @@ type SectionRow = {
 };
 
 const db = () => adminClient();
-
-function learnerOf(t: TopicRow): Learner {
-  return {
-    level: t.level as Level,
-    explainLang: t.explain_lang === "zh" ? "zh" : "en",
-    selfGender: (["m", "f"].includes(t.self_gender) ? t.self_gender : "x") as Learner["selfGender"],
-    zhGloss: t.zh_gloss,
-  };
-}
 
 function answersOf(t: TopicRow) {
   return Array.isArray(t.answers) ? (t.answers as { question: string; answer: string }[]) : null;

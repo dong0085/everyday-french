@@ -326,6 +326,24 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); ou
 .story-box { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; margin-top: 12px; }
 .story-box summary { cursor: pointer; color: var(--muted); font-size: 0.9rem; }
 .story-box p { margin: 10px 0 4px; white-space: pre-wrap; }
+.story-box h3 { margin: 14px 0 0; }
+.prompt-answers { margin: 10px 0 0; }
+.prompt-answers dt { color: var(--muted); font-size: 0.9rem; }
+.prompt-answers dd { margin: 2px 0 8px; white-space: pre-wrap; }
+.prompt-full { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 10px; }
+.prompt-full .btn { margin: 6px 0 8px; }
+.prompt-full pre {
+  margin: 0;
+  max-height: 60vh;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 0.8rem;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+}
 
 .topic-section { margin-top: 36px; }
 .topic-section > header { display: flex; gap: 12px; align-items: flex-start; }

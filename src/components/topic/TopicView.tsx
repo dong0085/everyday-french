@@ -277,12 +277,7 @@ export function TopicView({ initial, initialStale, welcome, hasLlm }: { initial:
         </div>
       )}
 
-      {topic.story && (
-        <details className="story-box">
-          <summary>What happened (your story)</summary>
-          <p>{topic.story}</p>
-        </details>
-      )}
+      {(topic.sourceText || topic.story) && <PromptBox topic={topic} />}
 
       {topic.stage === "outline" && generating && (
         <div className="stack" style={{ marginTop: 24 }}>
@@ -318,6 +313,54 @@ export function TopicView({ initial, initialStale, welcome, hasLlm }: { initial:
 
       {!topic.isExample && topic.status === "ready" && <InstallHint />}
     </main>
+  );
+}
+
+// ---------- What the topic was made from ----------
+
+function PromptBox({ topic }: { topic: FullTopic }) {
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(topic.prompt ?? "");
+      toast("Prompt copied.");
+    } catch {
+      toast("Could not copy. Select the text instead.");
+    }
+  };
+  return (
+    <details className="story-box">
+      <summary>What you wrote (the prompt for this topic)</summary>
+      <p>{topic.sourceText || topic.story}</p>
+      {topic.answers.length > 0 && (
+        <dl className="prompt-answers">
+          {topic.answers.map((a, i) => (
+            <div key={i}>
+              <dt>{a.question}</dt>
+              <dd>{a.answer}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+      {topic.story && topic.story !== topic.sourceText && (
+        <>
+          <h3 className="label">The AI&apos;s summary</h3>
+          <p>{topic.story}</p>
+        </>
+      )}
+      {topic.prompt && (
+        <details className="prompt-full">
+          <summary>Full prompt sent to the AI</summary>
+          <p className="hint">
+            The rules and your story, as the AI got them in the first step (planning the sections). The next steps send the plan back and ask for each section, My
+            story, and the review. Rebuilt from your saved story and settings.
+          </p>
+          <button type="button" className="btn btn-small" onClick={copy}>
+            Copy prompt
+          </button>
+          <pre>{topic.prompt}</pre>
+        </details>
+      )}
+    </details>
   );
 }
 

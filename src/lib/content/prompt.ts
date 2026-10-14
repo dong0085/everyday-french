@@ -11,6 +11,16 @@ export type Learner = {
   zhGloss: boolean;
 };
 
+/** The learner settings saved on a topic row. */
+export function learnerOf(t: { level: string; explain_lang: string; self_gender: string; zh_gloss: boolean }): Learner {
+  return {
+    level: t.level as Level,
+    explainLang: t.explain_lang === "zh" ? "zh" : "en",
+    selfGender: (["m", "f"].includes(t.self_gender) ? t.self_gender : "x") as SelfGender,
+    zhGloss: t.zh_gloss,
+  };
+}
+
 export const INSTRUCTIONS = `You write French study material for an adult learner, based on something that really happened to them.
 The learner studies standard French as spoken in France. Everything you write must be correct, natural French that a person in France would actually say.
 
